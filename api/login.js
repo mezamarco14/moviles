@@ -1,39 +1,24 @@
-const express = require('express');
+// api/login.js
+
 const bodyParser = require('body-parser');
-const cors = require('cors');
-const app = express();
-const port = 3000;
 
-// Habilitar CORS para aceptar solicitudes desde cualquier origen
-app.use(cors());
-
-// Middleware para parsear el cuerpo de la solicitud como JSON
-app.use(bodyParser.json());
-
-// Datos de usuario ficticios para probar el login
+// Datos de usuario ficticios para prueba
 const mockUser = {
   username: 'testuser',
   password: 'password123'
 };
 
-// Endpoint para login
-app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
+// Exportar como función serverless
+module.exports = (req, res) => {
+  // Middleware para parsear el cuerpo como JSON
+  bodyParser.json()(req, res, () => {
+    const { username, password } = req.body;
 
-  // Comprobar las credenciales
-  if (username === mockUser.username && password === mockUser.password) {
-    return res.json({ message: 'Login exitoso', token: 'abc123' });
-  } else {
-    return res.status(401).json({ message: 'Credenciales incorrectas' });
-  }
-});
-
-// Endpoint para obtener datos (solo para prueba)
-app.get('/api/data', (req, res) => {
-  res.json({ message: 'API funcionando correctamente' });
-});
-
-// Iniciar el servidor
-app.listen(port, () => {
-  console.log(`Servidor corriendo en http://localhost:${port}`);
-});
+    // Verificar las credenciales
+    if (username === mockUser.username && password === mockUser.password) {
+      return res.status(200).json({ message: 'Login exitoso', token: 'abc123' });
+    } else {
+      return res.status(401).json({ message: 'Credenciales incorrectas' });
+    }
+  });
+};
