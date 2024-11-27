@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect
 from werkzeug.utils import secure_filename
 import os
 import csv
-import json
+from datetime import datetime
 from azure.cosmos import CosmosClient, exceptions
 from dotenv import load_dotenv
 
@@ -10,10 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuración de Cosmos DB desde las variables de entorno
-url = os.getenv("COSMOS_DB_URL")  # URL de tu cuenta de Cosmos DB
-key = os.getenv("COSMOS_DB_KEY")  # Clave de acceso a Cosmos DB
-database_name = os.getenv("COSMOS_DB_DATABASE_NAME")  # Nombre de la base de datos
-container_name = os.getenv("COSMOS_DB_CONTAINER_NAME")  # Nombre del contenedor
+url = os.getenv("COSMOS_DB_URL")
+key = os.getenv("COSMOS_DB_KEY")
+database_name = os.getenv("COSMOS_DB_DATABASE_NAME")
+container_name = os.getenv("COSMOS_DB_CONTAINER_NAME")
 
 # Validar que las variables de entorno están presentes
 if not all([url, key, database_name, container_name]):
@@ -43,24 +43,47 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 # Convertir CSV a JSON
-# Convertir CSV a JSON
 def csv_to_json(file_path):
     data = []
     try:
         with open(file_path, mode='r', encoding='utf-8') as file:
             reader = csv.DictReader(file, delimiter=';')  # Usamos el delimitador ';' para CSV
+
+            # Imprimir las primeras filas para depuración
+            print("Contenido del archivo CSV:")
+            for i, row in enumerate(reader):
+                if i < 5:  # Mostrar solo las primeras 5 filas
+                    print(row)
+
+            # Reiniciar el lector para procesar todas las filas
+            file.seek(0)
             for row in reader:
-                record = {
-                    "Ciclo": row["Ciclo"],
-                    "Escuela": row["Escuela"],
-                    "Facultad": row["Facultad"],
-                    "Genero": row["Genero"],
-                    "Peso": row["Peso"],
-                    "Altura": row["Altura"],
-                    "Intervencion": row["Intervencion"],
-                    "Fecha": row["Fecha"]
-                }
-                data.append(record)
+                try:
+                    # Convertir la fecha al formato adecuado: 'dd/mm/yyyy' a 'yyyy-mm-dd'
+                    fecha = row["Fecha"]
+                    fecha_formateada = datetime.strptime(fecha, "%d/%m/%Y").strftime("%Y-%m-%d")
+                    
+                    # Crear el registro en formato JSON
+                    record = {
+                        "Ciclo": row["Ciclo"],
+                        "Escuela": row["Escuela"],
+                        "Facultad": row["Facultad"],
+                        "Genero": row["Genero"],
+                        "Peso": row["Peso"],
+                        "Altura": row["Altura"],
+                        "Intervencion": row["Intervencion"],
+                        "Fecha": fecha_formateada
+                    }
+                    
+                    # Verificar si alguna columna tiene datos vacíos
+                    if None in record.values():
+                        print(f"Advertencia: Faltan datos en una fila: {row}")
+                        continue  # Saltar la fila si faltan datos
+
+                    data.append(record)
+                except Exception as e:
+                    print(f"Error procesando la fila: {row}, Error: {e}")
+                    continue  # Continuar con la siguiente fila en caso de error
     except csv.Error as e:
         print(f"Error al leer el archivo CSV: {e}")
         raise
@@ -68,7 +91,6 @@ def csv_to_json(file_path):
         print(f"Error inesperado al procesar el archivo CSV: {e}")
         raise
     return data
-
 
 # Subir el archivo CSV
 @app.route('/')
@@ -80,12 +102,12 @@ def index():
 def upload_file():
     if 'file' not in request.files:
         print("No se encontró el archivo en la solicitud.")  # Depuración
-        return render_template('index.html', message="No se encontró el archivo en la solicitud.")
+        return redirect(request.url)
     
     file = request.files['file']
     if file.filename == '':
         print("El archivo no tiene nombre.")  # Depuración
-        return render_template('index.html', message="El archivo no tiene nombre.")
+        return redirect(request.url)
     
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
@@ -101,27 +123,25 @@ def upload_file():
         try:
             data = csv_to_json(file_path)
         except Exception as e:
-            print(f"Error al convertir el archivo CSV: {e}")
-            return render_template('index.html', message="Error al procesar el archivo CSV")
+            print(f"Error al procesar el archivo CSV: {e}")
+            return 'Error al procesar el archivo CSV'
         
         # Subir los datos a Cosmos DB
         for record in data:
             try:
-                # Verificar si el registro ya existe en Cosmos DB
+                # Generar un ID único para cada registro
                 record["id"] = f"{record['Ciclo']}-{record['Escuela']}-{record['Fecha']}"
                 container.upsert_item(record)
             except exceptions.CosmosResourceExistsError as e:
                 print(f"El registro ya existe en Cosmos DB: {e}")
-                return render_template('index.html', message="El registro ya existe en Cosmos DB.")
             except Exception as e:
                 print(f"Error al insertar el registro: {record}")
                 print(e)
-                return render_template('index.html', message="Error al subir los datos.")
         
-        return render_template('index.html', message="¡Datos cargados exitosamente a Cosmos DB!")
+        return f"¡Datos cargados exitosamente a Cosmos DB!"
 
     print("Archivo no válido.")  # Depuración
-    return render_template('index.html', message="Archivo no válido")
+    return 'Archivo no válido'
 
 # Verificar si el archivo se ejecuta directamente
 if __name__ == '__main__':
