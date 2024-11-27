@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subir archivo CSV a Cosmos DB</title>
+    <title>Ingreso de Datos</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>Subir archivo CSV</h1>
+        <h1>Ingreso de Datos</h1>
+        <p class="description">Sube tu archivo CSV para cargar los datos en Cosmos DB.</p>
+        
+        {% if message %}
+            <div class="message success">{{ message }}</div>
+        {% endif %}
+
         <form action="/upload" method="post" enctype="multipart/form-data">
             <label for="file">Selecciona el archivo CSV (.csv):</label>
             <input type="file" name="file" accept=".csv" required><br><br>
