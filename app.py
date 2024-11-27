@@ -10,10 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuración de Cosmos DB desde las variables de entorno
-url = os.getenv("COSMOS_DB_URL")  # URL de tu cuenta de Cosmos DB
-key = os.getenv("COSMOS_DB_KEY")  # Clave de acceso a Cosmos DB
-database_name = os.getenv("COSMOS_DB_DATABASE")  # Nombre de la base de datos
-container_name = os.getenv("COSMOS_DB_CONTAINER")  # Nombre del contenedor
+url = os.getenv("COSMOS_DB_URL")  # No necesitas cambiar esto
+key = os.getenv("COSMOS_DB_KEY")  # No necesitas cambiar esto
+database_name = os.getenv("COSMOS_DB_DATABASE_NAME")  # Cambié el nombre
+container_name = os.getenv("COSMOS_DB_CONTAINER_NAME")  # Cambié el nombre
 
 # Validar que las variables de entorno están presentes
 if not all([url, key, database_name, container_name]):
