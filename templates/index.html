@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir archivo CSV a Cosmos DB</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Subir archivo CSV</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="file">Selecciona el archivo CSV (.csv):</label>
+            <input type="file" name="file" accept=".csv" required><br><br>
+            <input type="submit" value="Subir">
+        </form>
+    </div>
+</body>
+</html>
