@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect
 from werkzeug.utils import secure_filename
 import os
 import csv
@@ -10,10 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuración de Cosmos DB desde las variables de entorno
-url = os.getenv('COSMOS_DB_URL')  # URL de tu cuenta de Cosmos DB
-key = os.getenv('COSMOS_DB_KEY')  # Clave de Cosmos DB
-database_name = os.getenv('COSMOS_DB_DATABASE_NAME')  # Nombre de la base de datos
-container_name = os.getenv('COSMOS_DB_CONTAINER_NAME')  # Nombre del contenedor
+url = os.getenv("COSMOS_DB_URL")  # URL de tu cuenta de Cosmos DB
+key = os.getenv("COSMOS_DB_KEY")  # Clave de acceso a Cosmos DB
+database_name = os.getenv("COSMOS_DB_DATABASE")  # Nombre de la base de datos
+container_name = os.getenv("COSMOS_DB_CONTAINER")  # Nombre del contenedor
 
 # Configuración de Flask
 app = Flask(__name__)
@@ -36,14 +36,14 @@ def csv_to_json(file_path):
         reader = csv.DictReader(file, delimiter=';')  # Usamos el delimitador ';' para CSV
         for row in reader:
             record = {
-                "Ciclo": row["Ciclo"],  # Columna "Ciclo"
-                "Escuela": row["Escuela"],  # Columna "Escuela"
-                "Facultad": row["Facultad"],  # Columna "Facultad"
-                "Genero": row["Genero"],  # Columna "Genero"
-                "Peso": row["Peso"],  # Columna "Peso"
-                "Altura": row["Altura"],  # Columna "Altura"
-                "Intervencion": row["Intervencion"],  # Columna "Intervencion"
-                "Fecha": row["Fecha"]  # Columna "Fecha"
+                "Ciclo": row["Ciclo"],
+                "Escuela": row["Escuela"],
+                "Facultad": row["Facultad"],
+                "Genero": row["Genero"],
+                "Peso": row["Peso"],
+                "Altura": row["Altura"],
+                "Intervencion": row["Intervencion"],
+                "Fecha": row["Fecha"]
             }
             data.append(record)
     return data
@@ -87,5 +87,6 @@ def upload_file():
     print("Archivo no válido.")  # Depuración
     return 'Archivo no válido'
 
+# Verificar si el archivo se ejecuta directamente
 if __name__ == '__main__':
     app.run(debug=True)
