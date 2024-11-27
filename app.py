@@ -10,10 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuración de Cosmos DB desde las variables de entorno
-url = os.getenv("COSMOS_DB_URL")  # No necesitas cambiar esto
-key = os.getenv("COSMOS_DB_KEY")  # No necesitas cambiar esto
-database_name = os.getenv("COSMOS_DB_DATABASE_NAME")  # Cambié el nombre
-container_name = os.getenv("COSMOS_DB_CONTAINER_NAME")  # Cambié el nombre
+url = os.getenv("COSMOS_DB_URL")  # URL de tu cuenta de Cosmos DB
+key = os.getenv("COSMOS_DB_KEY")  # Clave de acceso a Cosmos DB
+database_name = os.getenv("COSMOS_DB_DATABASE_NAME")  # Nombre de la base de datos
+container_name = os.getenv("COSMOS_DB_CONTAINER_NAME")  # Nombre del contenedor
 
 # Validar que las variables de entorno están presentes
 if not all([url, key, database_name, container_name]):
@@ -43,23 +43,32 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 # Convertir CSV a JSON
+# Convertir CSV a JSON
 def csv_to_json(file_path):
     data = []
-    with open(file_path, mode='r', encoding='utf-8') as file:
-        reader = csv.DictReader(file, delimiter=';')  # Usamos el delimitador ';' para CSV
-        for row in reader:
-            record = {
-                "Ciclo": row["Ciclo"],
-                "Escuela": row["Escuela"],
-                "Facultad": row["Facultad"],
-                "Genero": row["Genero"],
-                "Peso": row["Peso"],
-                "Altura": row["Altura"],
-                "Intervencion": row["Intervencion"],
-                "Fecha": row["Fecha"]
-            }
-            data.append(record)
+    try:
+        with open(file_path, mode='r', encoding='utf-8') as file:
+            reader = csv.DictReader(file, delimiter=';')  # Usamos el delimitador ';' para CSV
+            for row in reader:
+                record = {
+                    "Ciclo": row["Ciclo"],
+                    "Escuela": row["Escuela"],
+                    "Facultad": row["Facultad"],
+                    "Genero": row["Genero"],
+                    "Peso": row["Peso"],
+                    "Altura": row["Altura"],
+                    "Intervencion": row["Intervencion"],
+                    "Fecha": row["Fecha"]
+                }
+                data.append(record)
+    except csv.Error as e:
+        print(f"Error al leer el archivo CSV: {e}")
+        raise
+    except Exception as e:
+        print(f"Error inesperado al procesar el archivo CSV: {e}")
+        raise
     return data
+
 
 # Subir el archivo CSV
 @app.route('/')
@@ -71,12 +80,12 @@ def index():
 def upload_file():
     if 'file' not in request.files:
         print("No se encontró el archivo en la solicitud.")  # Depuración
-        return redirect(request.url)
+        return render_template('index.html', message="No se encontró el archivo en la solicitud.")
     
     file = request.files['file']
     if file.filename == '':
         print("El archivo no tiene nombre.")  # Depuración
-        return redirect(request.url)
+        return render_template('index.html', message="El archivo no tiene nombre.")
     
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
@@ -93,7 +102,7 @@ def upload_file():
             data = csv_to_json(file_path)
         except Exception as e:
             print(f"Error al convertir el archivo CSV: {e}")
-            return 'Error al procesar el archivo CSV'
+            return render_template('index.html', message="Error al procesar el archivo CSV")
         
         # Subir los datos a Cosmos DB
         for record in data:
@@ -103,14 +112,16 @@ def upload_file():
                 container.upsert_item(record)
             except exceptions.CosmosResourceExistsError as e:
                 print(f"El registro ya existe en Cosmos DB: {e}")
+                return render_template('index.html', message="El registro ya existe en Cosmos DB.")
             except Exception as e:
                 print(f"Error al insertar el registro: {record}")
                 print(e)
+                return render_template('index.html', message="Error al subir los datos.")
         
-        return f"¡Datos cargados exitosamente a Cosmos DB!"
+        return render_template('index.html', message="¡Datos cargados exitosamente a Cosmos DB!")
 
     print("Archivo no válido.")  # Depuración
-    return 'Archivo no válido'
+    return render_template('index.html', message="Archivo no válido")
 
 # Verificar si el archivo se ejecuta directamente
 if __name__ == '__main__':
